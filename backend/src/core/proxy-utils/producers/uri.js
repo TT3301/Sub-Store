@@ -8,6 +8,13 @@ export default function URI_Producer() {
         let result = '';
         delete proxy.subName;
         delete proxy.collectionName;
+        delete proxy.id;
+        delete proxy.resolved;
+        for (const key in proxy) {
+            if (proxy[key] == null || /^_/i.test(key)) {
+                delete proxy[key];
+            }
+        }
         if (['trojan', 'tuic', 'hysteria', 'hysteria2'].includes(proxy.type)) {
             delete proxy.tls;
         }
@@ -273,6 +280,9 @@ export default function URI_Producer() {
                     hysteria2params.push(
                         `sni=${encodeURIComponent(proxy.sni)}`,
                     );
+                }
+                if (proxy.ports) {
+                    hysteria2params.push(`mport=${proxy.ports}`);
                 }
                 if (proxy['tls-fingerprint']) {
                     hysteria2params.push(

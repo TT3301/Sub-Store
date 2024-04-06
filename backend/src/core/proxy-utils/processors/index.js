@@ -490,7 +490,7 @@ const DOMAIN_RESOLVERS = {
             },
         });
         const answers = resp.body.split(';').map((i) => i.split(',')[0]);
-        if (answers.length === 0) {
+        if (answers.length === 0 || String(answers) === '0') {
             throw new Error('No answers');
         }
         const result = answers[answers.length - 1];
@@ -550,13 +550,25 @@ function ResolveDomainOperator({ provider, type: _type, filter, cache }) {
                                 results[p.server],
                             );
                             if (server && port) {
+                                p._domain = p.server;
                                 p.server = server;
                                 p.port = port;
                                 p.resolved = true;
+                                p._IPv4 = p.server;
+                                if (!isIP(p._IP)) {
+                                    p._IP = p.server;
+                                }
+                            } else {
+                                p.resolved = false;
                             }
                         } else {
+                            p._domain = p.server;
                             p.server = results[p.server];
                             p.resolved = true;
+                            p[`_${type}`] = p.server;
+                            if (!isIP(p._IP)) {
+                                p._IP = p.server;
+                            }
                         }
                     } else {
                         p.resolved = false;
@@ -617,6 +629,8 @@ function RegionFilter(regions) {
         SG: '🇸🇬',
         JP: '🇯🇵',
         UK: '🇬🇧',
+        DE: '🇩🇪',
+        KR: '🇰🇷',
     };
     return {
         name: 'Region Filter',

@@ -3,6 +3,8 @@ import { ENV } from '@/vendor/open-api';
 import { failed, success } from '@/restful/response';
 import { updateArtifactStore, updateAvatar } from '@/restful/settings';
 import resourceCache from '@/utils/resource-cache';
+import scriptResourceCache from '@/utils/script-resource-cache';
+import headersResourceCache from '@/utils/headers-resource-cache';
 import {
     GIST_BACKUP_FILE_NAME,
     GIST_BACKUP_KEY,
@@ -73,6 +75,8 @@ async function refresh(_, res) {
 
     // 2. clear resource cache
     resourceCache.revokeAll();
+    scriptResourceCache.revokeAll();
+    headersResourceCache.revokeAll();
     success(res);
 }
 
@@ -153,11 +157,14 @@ async function gistBackup(req, res) {
             }
             success(res);
         } catch (err) {
+            $.error(
+                `Failed to ${action} gist data.\nReason: ${err.message ?? err}`,
+            );
             failed(
                 res,
                 new InternalServerError(
                     'BACKUP_FAILED',
-                    `Failed to ${action} data to gist!`,
+                    `Failed to ${action} gist data!`,
                     `Reason: ${err.message ?? err}`,
                 ),
             );

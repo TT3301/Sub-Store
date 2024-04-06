@@ -9,7 +9,8 @@ function operator(proxies = [], targetPlatform, context) {
   // 可在预览界面点击节点查看 JSON 结构 或查看 `target=JSON` 的通用订阅
   // 1. `no-resolve` 为不解析域名
   // 2. 域名解析后 会多一个 `resolved` 字段
-  // 3. 节点字段 `exec` 为 `ssr-local` 路径, 默认 `/usr/local/bin/ssr-local`; 端口从 10000 开始递增(暂不支持配置)
+  // 3. 域名解析后会有`_IPv4`, `_IPv6`, `_IP`(若有多个步骤, 只取第一次成功的 v4 或 v6 数据), `_domain` 字段
+  // 4. 节点字段 `exec` 为 `ssr-local` 路径, 默认 `/usr/local/bin/ssr-local`; 端口从 10000 开始递增(暂不支持配置)
 
   // $arguments 为传入的脚本参数
 
@@ -22,6 +23,9 @@ function operator(proxies = [], targetPlatform, context) {
   
   // scriptResourceCache 缓存
   // 可参考 https://t.me/zhetengsha/1003
+  // const cache = scriptResourceCache
+  // cache.set(id, data)
+  // cache.get(id)
 
   // ProxyUtils 为节点处理工具
   // 可参考 https://t.me/zhetengsha/1066
@@ -33,7 +37,19 @@ function operator(proxies = [], targetPlatform, context) {
   //     isIPv6,
   //     isIP,
   //     yaml, // yaml 解析和生成
+  //     getFlag, // 获取 emoji 旗帜
+  //     getISO, // 获取 ISO 3166-1 alpha-2 代码
   // }
+
+  // 示例: 给节点名添加前缀
+  // $server.name = `[${ProxyUtils.getISO($server.name)}] ${$server.name}`
+
+  // 示例: 从 sni 文件中读取内容并进行节点操作
+  // const sni = await produceArtifact({
+  //     type: 'file',
+  //     name: 'sni' // 文件名
+  // });
+  // $server.sni = sni
 
   // 1. Surge 输出 WireGuard 完整配置
 
@@ -98,6 +114,7 @@ function operator(proxies = [], targetPlatform, context) {
 
   // { $content, $files } will be passed to the next operator 
   // $content is the final content of the file
+
   // flowUtils 为机场订阅流量信息处理工具
   // 可参考: 
   // 1. https://t.me/zhetengsha/948

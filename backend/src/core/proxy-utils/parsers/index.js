@@ -63,9 +63,9 @@ function URI_SS() {
             /\d+/,
         )?.[0];
 
-        const userInfo = userInfoStr.split(':');
-        proxy.cipher = userInfo[0];
-        proxy.password = userInfo[1];
+        const userInfo = userInfoStr.match(/(^.*?):(.*$)/);
+        proxy.cipher = userInfo[1];
+        proxy.password = userInfo[2];
 
         // handle obfs
         const idx = content.indexOf('?plugin=');
@@ -547,6 +547,7 @@ function URI_Hysteria2() {
             proxy.obfs = params.obfs;
         }
 
+        proxy.ports = params.mport;
         proxy['obfs-password'] = params['obfs-password'];
         proxy['skip-cert-verify'] = /(TRUE)|1/i.test(params.insecure);
         proxy.tfo = /(TRUE)|1/i.test(params.fastopen);

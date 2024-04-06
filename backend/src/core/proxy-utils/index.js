@@ -15,6 +15,7 @@ import $ from '@/core/app';
 import { FILES_KEY, MODULES_KEY } from '@/constants';
 import { findByName } from '@/utils/database';
 import { produceArtifact } from '@/restful/sync';
+import { getFlag, getISO } from '@/utils/geo';
 
 function preprocess(raw) {
     for (const processor of PROXY_PREPROCESSORS) {
@@ -159,7 +160,7 @@ async function processFn(proxies, operators = [], targetPlatform, source) {
             continue;
         }
 
-        $.info(
+        $.log(
             `Applying "${item.type}" with arguments:\n >>> ${
                 JSON.stringify(item.args, null, 2) || 'None'
             }`,
@@ -186,6 +187,10 @@ function produce(proxies, targetPlatform, type, opts = {}) {
         throw new Error(`Target platform: ${targetPlatform} is not supported!`);
     }
 
+    const sni_off_supported = /Surge|SurgeMac|Shadowrocket/i.test(
+        targetPlatform,
+    );
+
     // filter unsupported proxies
     proxies = proxies.filter(
         (proxy) =>
@@ -196,10 +201,22 @@ function produce(proxies, targetPlatform, type, opts = {}) {
         if (!isNotBlank(proxy.name)) {
             proxy.name = `${proxy.type} ${proxy.server}:${proxy.port}`;
         }
+        if (proxy['disable-sni']) {
+            if (sni_off_supported) {
+                proxy.sni = 'off';
+            } else if (!['tuic'].includes(proxy.type)) {
+                $.error(
+                    `Target platform ${targetPlatform} does not support sni off. Proxy's fields (sni, tls-fingerprint and skip-cert-verify) will be modified.`,
+                );
+                proxy.sni = '';
+                proxy['skip-cert-verify'] = true;
+                delete proxy['tls-fingerprint'];
+            }
+        }
         return proxy;
     });
 
-    $.info(`Producing proxies for target: ${targetPlatform}`);
+    $.log(`Producing proxies for target: ${targetPlatform}`);
     if (typeof producer.type === 'undefined' || producer.type === 'SINGLE') {
         let localPort = 10000;
         const list = proxies
@@ -242,6 +259,8 @@ export const ProxyUtils = {
     isIPv6,
     isIP,
     yaml: YAML,
+    getFlag,
+    getISO,
 };
 
 function tryParse(parser, line) {
@@ -395,6 +414,9 @@ function lastParse(proxy) {
             $.error(`proxy.name decode failed\nReason: ${e}`);
             proxy.name = `${proxy.type} ${proxy.server}:${proxy.port}`;
         }
+    }
+    if (['', 'off'].includes(proxy.sni)) {
+        proxy['disable-sni'] = true;
     }
     return proxy;
 }
