@@ -674,6 +674,89 @@ function URI_TUIC() {
     };
     return { name, test, parse };
 }
+function URI_WireGuard() {
+    const name = 'URI WireGuard Parser';
+    const test = (line) => {
+        return /^(wireguard|wg):\/\//.test(line);
+    };
+    const parse = (line) => {
+        line = line.split(/(wireguard|wg):\/\//)[2];
+        /* eslint-disable no-unused-vars */
+        let [
+            __,
+            ___,
+            privateKey,
+            server,
+            ____,
+            port,
+            _____,
+            addons = '',
+            name,
+        ] = /^((.*?)@)?(.*?)(:(\d+))?\/?(\?(.*?))?(?:#(.*?))?$/.exec(line);
+        /* eslint-enable no-unused-vars */
+
+        port = parseInt(`${port}`, 10);
+        if (isNaN(port)) {
+            port = 51820;
+        }
+        privateKey = decodeURIComponent(privateKey);
+        if (name != null) {
+            name = decodeURIComponent(name);
+        }
+        name = name ?? `WireGuard ${server}:${port}`;
+        const proxy = {
+            type: 'wireguard',
+            name,
+            server,
+            port,
+            'private-key': privateKey,
+            udp: true,
+        };
+        for (const addon of addons.split('&')) {
+            let [key, value] = addon.split('=');
+            key = key.replace(/_/, '-');
+            value = decodeURIComponent(value);
+            if (['reserved'].includes(key)) {
+                const parsed = value
+                    .split(',')
+                    .map((i) => parseInt(i.trim(), 10))
+                    .filter((i) => Number.isInteger(i));
+                if (parsed.length === 3) {
+                    proxy[key] = parsed;
+                }
+            } else if (['address', 'ip'].includes(key)) {
+                value.split(',').map((i) => {
+                    const ip = i
+                        .trim()
+                        .replace(/\/\d+$/, '')
+                        .replace(/^\[/, '')
+                        .replace(/\]$/, '');
+                    if (isIPv4(ip)) {
+                        proxy.ip = ip;
+                    } else if (isIPv6(ip)) {
+                        proxy.ipv6 = ip;
+                    }
+                });
+            } else if (['mtu'].includes(key)) {
+                const parsed = parseInt(value.trim(), 10);
+                if (Number.isInteger(parsed)) {
+                    proxy[key] = parsed;
+                }
+            } else if (/publickey/i.test(key)) {
+                proxy['public-key'] = value;
+            } else if (/privatekey/i.test(key)) {
+                proxy['private-key'] = value;
+            } else if (['udp'].includes(key)) {
+                proxy[key] = /(TRUE)|1/i.test(value);
+            } else if (!['flag'].includes(key)) {
+                proxy[key] = value;
+            }
+        }
+
+        return proxy;
+    };
+    return { name, test, parse };
+}
 
 // Trojan URI format
 function URI_Trojan() {
@@ -750,6 +833,9 @@ function Clash_All() {
 
         if (proxy.fingerprint) {
             proxy['tls-fingerprint'] = proxy.fingerprint;
+        }
+        if (proxy['dialer-proxy']) {
+            proxy['underlying-proxy'] = proxy['dialer-proxy'];
         }
 
         if (proxy['benchmark-url']) {
@@ -905,6 +991,15 @@ function Loon_Http() {
     const name = 'Loon HTTP Parser';
     const test = (line) => {
         return /^.*=\s*http/i.test(line.split(',')[0]);
+    };
+
+    const parse = (line) => getLoonParser().parse(line);
+    return { name, test, parse };
+}
+function Loon_Socks5() {
+    const name = 'Loon SOCKS5 Parser';
+    const test = (line) => {
+        return /^.*=\s*socks5/i.test(line.split(',')[0]);
     };
 
     const parse = (line) => getLoonParser().parse(line);
@@ -1193,6 +1288,7 @@ export default [
     URI_VMess(),
     URI_VLESS(),
     URI_TUIC(),
+    URI_WireGuard(),
     URI_Hysteria(),
     URI_Hysteria2(),
     URI_Trojan(),
@@ -1215,6 +1311,7 @@ export default [
     Loon_Hysteria2(),
     Loon_Trojan(),
     Loon_Http(),
+    Loon_Socks5(),
     Loon_WireGuard(),
     QX_SS(),
     QX_SSR(),

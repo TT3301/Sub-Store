@@ -1,6 +1,10 @@
 import ClashMeta_Producer from './clashmeta';
 import $ from '@/core/app';
+import { isIPv4, isIPv6 } from '@/utils';
 
+const detourParser = (proxy, parsedProxy) => {
+    if (proxy['dialer-proxy']) parsedProxy.detour = proxy['dialer-proxy'];
+};
 const tfoParser = (proxy, parsedProxy) => {
     parsedProxy.tcp_fast_open = false;
     if (proxy.tfo) parsedProxy.tcp_fast_open = true;
@@ -249,6 +253,7 @@ const sshParser = (proxy = {}) => {
         parsedProxy.host_key_algorithms = proxy['host-key-algorithms'];
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     return parsedProxy;
 };
 
@@ -274,6 +279,7 @@ const httpParser = (proxy = {}) => {
     }
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     tlsParser(proxy, parsedProxy);
     return parsedProxy;
 };
@@ -295,6 +301,7 @@ const socks5Parser = (proxy = {}) => {
     if (proxy['udp-over-tcp']) parsedProxy.udp_over_tcp = true;
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     return parsedProxy;
 };
 
@@ -326,6 +333,7 @@ const shadowTLSParser = (proxy = {}) => {
         throw '端口值非法';
     if (proxy['fast-open'] === true) stPart.udp_fragment = true;
     tfoParser(proxy, stPart);
+    detourParser(proxy, stPart);
     smuxParser(proxy.smux, ssPart);
     return { type: 'ss-with-st', ssPart, stPart };
 };
@@ -344,6 +352,7 @@ const ssParser = (proxy = {}) => {
     if (proxy['udp-over-tcp']) parsedProxy.udp_over_tcp = true;
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     if (proxy.plugin) {
         const optArr = [];
@@ -421,6 +430,7 @@ const ssrParser = (proxy = {}) => {
         parsedProxy.protocol_param = proxy['protocol-param'];
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
 };
@@ -457,6 +467,7 @@ const vmessParser = (proxy = {}) => {
     if (proxy.network === 'grpc') grpcParser(proxy, parsedProxy);
 
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     tlsParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
@@ -479,6 +490,7 @@ const vlessParser = (proxy = {}) => {
     if (proxy.network === 'grpc') grpcParser(proxy, parsedProxy);
 
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     tlsParser(proxy, parsedProxy);
     return parsedProxy;
@@ -499,6 +511,7 @@ const trojanParser = (proxy = {}) => {
     if (proxy.network === 'ws') wsParser(proxy, parsedProxy);
 
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     tlsParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
@@ -545,6 +558,7 @@ const hysteriaParser = (proxy = {}) => {
         }
     }
     tlsParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     tfoParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
@@ -569,6 +583,7 @@ const hysteria2Parser = (proxy = {}) => {
     if (!parsedProxy.obfs.type) delete parsedProxy.obfs;
     tlsParser(proxy, parsedProxy);
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
 };
@@ -597,6 +612,7 @@ const tuic5Parser = (proxy = {}) => {
     if (proxy['heartbeat-interval'])
         parsedProxy.heartbeat = `${proxy['heartbeat-interval']}ms`;
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     tlsParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
@@ -605,8 +621,11 @@ const tuic5Parser = (proxy = {}) => {
 const wireguardParser = (proxy = {}) => {
     const local_address = ['ip', 'ipv6']
         .map((i) => proxy[i])
-        .filter((i) => i)
-        .map((i) => (/\\/.test(i) ? i : `${i}/32`));
+        .map((i) => {
+            if (isIPv4(i)) return `${i}/32`;
+            if (isIPv6(i)) return `${i}/128`;
+        })
+        .filter((i) => i);
     const parsedProxy = {
         tag: proxy.name,
         type: 'wireguard',
@@ -622,7 +641,7 @@ const wireguardParser = (proxy = {}) => {
         throw 'invalid port';
     if (proxy['fast-open']) parsedProxy.udp_fragment = true;
     if (typeof proxy.reserved === 'string') {
-        parsedProxy.reserved.push(proxy.reserved);
+        parsedProxy.reserved = proxy.reserved;
     } else if (Array.isArray(proxy.reserved)) {
         for (const r of proxy.reserved) parsedProxy.reserved.push(r);
     } else {
@@ -650,6 +669,7 @@ const wireguardParser = (proxy = {}) => {
         }
     }
     tfoParser(proxy, parsedProxy);
+    detourParser(proxy, parsedProxy);
     smuxParser(proxy.smux, parsedProxy);
     return parsedProxy;
 };
@@ -789,6 +809,7 @@ export default function singbox_Producer() {
                     $.error(e.message ?? e);
                 }
             });
+
         return type === 'internal'
             ? list
             : JSON.stringify({ outbounds: list }, null, 2);

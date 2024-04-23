@@ -26,11 +26,11 @@ Core functionalities:
 
 ### Supported Input Formats
 
-- [x] URI(SS, SSR, VMess, VLESS, Trojan, Hysteria, Hysteria 2, TUIC v5)
+- [x] URI(SS, SSR, VMess, VLESS, Trojan, Hysteria, Hysteria 2, TUIC v5, WireGuard)
 - [x] Clash Proxies YAML
 - [x] Clash Proxy JSON(single line)
 - [x] QX (SS, SSR, VMess, Trojan, HTTP, SOCKS5, VLESS)
-- [x] Loon (SS, SSR, VMess, Trojan, HTTP, SOCKS5, WireGuard, VLESS, Hysteria 2)
+- [x] Loon (SS, SSR, VMess, Trojan, HTTP, SOCKS5, SOCKS5-TLS, WireGuard, VLESS, Hysteria 2)
 - [x] Surge (SS, VMess, Trojan, HTTP, SOCKS5, SOCKS5-TLS, TUIC, Snell, Hysteria 2, SSH(Password authentication only), SSR(external, only for macOS), External Proxy Program(only for macOS), WireGuard(Surge to Surge))
 - [x] Surfboard (SS, VMess, Trojan, HTTP, SOCKS5, SOCKS5-TLS, WireGuard(Surfboard to Surfboard))
 - [x] Shadowrocket (SS, SSR, VMess, Trojan, HTTP, SOCKS5, Snell, VLESS, WireGuard, Hysteria, Hysteria 2, TUIC)
