@@ -26,7 +26,7 @@ export default function URI_Producer() {
                 const userinfo = `${proxy.cipher}:${proxy.password}`;
                 result = `ss://${Base64.encode(userinfo)}@${proxy.server}:${
                     proxy.port
-                }/`;
+                }${proxy.plugin ? '/' : ''}`;
                 if (proxy.plugin) {
                     result += '?plugin=';
                     const opts = proxy['plugin-opts'];
@@ -55,7 +55,9 @@ export default function URI_Producer() {
                     result = `${result}${proxy.plugin ? '&' : '?'}uot=1`;
                 }
                 if (proxy.tfo) {
-                    result = `${result}${proxy.plugin ? '&' : '?'}tfo=1`;
+                    result = `${result}${
+                        proxy.plugin || proxy['udp-over-tcp'] ? '&' : '?'
+                    }tfo=1`;
                 }
                 result += `#${encodeURIComponent(proxy.name)}`;
                 break;
