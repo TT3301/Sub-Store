@@ -14,13 +14,14 @@ const ipVersions = {
 
 export default function Surge_Producer() {
     const produce = (proxy, type, opts = {}) => {
+        proxy.name = proxy.name.replace(/=|,/g, '');
         switch (proxy.type) {
             case 'ss':
                 return shadowsocks(proxy);
             case 'trojan':
                 return trojan(proxy);
             case 'vmess':
-                return vmess(proxy);
+                return vmess(proxy, opts['include-unsupported-proxy']);
             case 'http':
                 return http(proxy);
             case 'socks5':
@@ -263,7 +264,7 @@ function trojan(proxy) {
     return result.toString();
 }
 
-function vmess(proxy) {
+function vmess(proxy, includeUnsupportedProxy) {
     const result = new Result(proxy);
     result.append(`${proxy.name}=${proxy.type},${proxy.server},${proxy.port}`);
     result.appendIfPresent(`,username=${proxy.uuid}`, 'uuid');
@@ -277,7 +278,7 @@ function vmess(proxy) {
     );
 
     // transport
-    handleTransport(result, proxy);
+    handleTransport(result, proxy, includeUnsupportedProxy);
 
     // AEAD
     if (isPresent(proxy, 'aead')) {
@@ -1012,7 +1013,7 @@ function hysteria2(proxy) {
     return result.toString();
 }
 
-function handleTransport(result, proxy) {
+function handleTransport(result, proxy, includeUnsupportedProxy) {
     if (isPresent(proxy, 'network')) {
         if (proxy.network === 'ws') {
             result.append(`,ws=true`);
@@ -1038,7 +1039,13 @@ function handleTransport(result, proxy) {
                 }
             }
         } else {
-            throw new Error(`network ${proxy.network} is unsupported`);
+            if (includeUnsupportedProxy && ['http'].includes(proxy.network)) {
+                $.info(
+                    `Include Unsupported Proxy: nework ${proxy.network} -> tcp`,
+                );
+            } else {
+                throw new Error(`network ${proxy.network} is unsupported`);
+            }
         }
     }
 }

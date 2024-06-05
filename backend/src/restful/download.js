@@ -55,7 +55,11 @@ async function downloadSubscription(req, res) {
     const platform =
         req.query.target || getPlatformFromHeaders(req.headers) || 'JSON';
 
-    $.info(`正在下载订阅：${name}`);
+    $.info(
+        `正在下载订阅：${name}\n请求 User-Agent: ${
+            req.headers['user-agent'] || req.headers['User-Agent']
+        }`,
+    );
     let {
         url,
         ua,
@@ -152,6 +156,7 @@ async function downloadSubscription(req, res) {
                             $arguments.flowUserAgent,
                             undefined,
                             sub.proxy,
+                            $arguments.flowUrl,
                         );
                         if (flowInfo) {
                             res.set('subscription-userinfo', flowInfo);
@@ -228,7 +233,11 @@ async function downloadCollection(req, res) {
     const allCols = $.read(COLLECTIONS_KEY);
     const collection = findByName(allCols, name);
 
-    $.info(`正在下载组合订阅：${name}`);
+    $.info(
+        `正在下载组合订阅：${name}\n请求 User-Agent: ${
+            req.headers['user-agent'] || req.headers['User-Agent']
+        }`,
+    );
 
     let {
         ignoreFailedRemoteSub,
@@ -306,6 +315,7 @@ async function downloadCollection(req, res) {
                                 $arguments.flowUserAgent,
                                 undefined,
                                 sub.proxy,
+                                $arguments.flowUrl,
                             );
                             if (flowInfo) {
                                 res.set('subscription-userinfo', flowInfo);

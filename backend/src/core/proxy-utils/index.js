@@ -15,7 +15,7 @@ import $ from '@/core/app';
 import { FILES_KEY, MODULES_KEY } from '@/constants';
 import { findByName } from '@/utils/database';
 import { produceArtifact } from '@/restful/sync';
-import { getFlag, getISO, MMDB } from '@/utils/geo';
+import { getFlag, removeFlag, getISO, MMDB } from '@/utils/geo';
 import Gist from '@/utils/gist';
 
 function preprocess(raw) {
@@ -199,6 +199,10 @@ function produce(proxies, targetPlatform, type, opts = {}) {
     );
 
     proxies = proxies.map((proxy) => {
+        proxy._subName = proxy.subName;
+        proxy._collectionName = proxy.collectionName;
+        proxy._resolved = proxy.resolved;
+
         if (!isNotBlank(proxy.name)) {
             proxy.name = `${proxy.type} ${proxy.server}:${proxy.port}`;
         }
@@ -272,6 +276,7 @@ export const ProxyUtils = {
     isIP,
     yaml: YAML,
     getFlag,
+    removeFlag,
     getISO,
     MMDB,
     Gist,
@@ -431,6 +436,24 @@ function lastParse(proxy) {
                 $.error(`proxy.name decode failed\nReason: ${e}`);
                 proxy.name = `${proxy.type} ${proxy.server}:${proxy.port}`;
             }
+        }
+    }
+    if (['ws', 'http', 'h2'].includes(proxy.network)) {
+        if (
+            ['ws', 'h2'].includes(proxy.network) &&
+            !proxy[`${proxy.network}-opts`]?.path
+        ) {
+            proxy[`${proxy.network}-opts`] =
+                proxy[`${proxy.network}-opts`] || {};
+            proxy[`${proxy.network}-opts`].path = '/';
+        } else if (
+            proxy.network === 'http' &&
+            (!Array.isArray(proxy[`${proxy.network}-opts`]?.path) ||
+                proxy[`${proxy.network}-opts`]?.path.every((i) => !i))
+        ) {
+            proxy[`${proxy.network}-opts`] =
+                proxy[`${proxy.network}-opts`] || {};
+            proxy[`${proxy.network}-opts`].path = ['/'];
         }
     }
     if (['', 'off'].includes(proxy.sni)) {

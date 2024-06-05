@@ -2,7 +2,7 @@ import resourceCache from '@/utils/resource-cache';
 import scriptResourceCache from '@/utils/script-resource-cache';
 import { isIPv4, isIPv6 } from '@/utils';
 import { FULL } from '@/utils/logical';
-import { getFlag } from '@/utils/geo';
+import { getFlag, removeFlag } from '@/utils/geo';
 import lodash from 'lodash';
 import $ from '@/core/app';
 import { hex_md5 } from '@/vendor/md5';
@@ -462,7 +462,7 @@ const DOMAIN_RESOLVERS = {
         const cached = resourceCache.get(id);
         if (!noCache && cached) return cached;
         const resp = await $.http.get({
-            url: `http://223.6.6.6/resolve?name=${encodeURIComponent(
+            url: `http://223.6.6.6/resolve?edns_client_subnet=223.6.6.6/24&name=${encodeURIComponent(
                 domain,
             )}&type=${type === 'IPv6' ? 'AAAA' : 'A'}&short=1`,
             headers: {
@@ -482,7 +482,7 @@ const DOMAIN_RESOLVERS = {
         const cached = resourceCache.get(id);
         if (!noCache && cached) return cached;
         const resp = await $.http.get({
-            url: `http://119.28.28.28/d?type=${
+            url: `http://119.28.28.28/d?ip=119.28.28.28&type=${
                 type === 'IPv6' ? 'AAAA' : 'A'
             }&dn=${encodeURIComponent(domain)}`,
             headers: {
@@ -512,12 +512,17 @@ function ResolveDomainOperator({ provider, type: _type, filter, cache }) {
     return {
         name: 'Resolve Domain Operator',
         func: async (proxies) => {
+            proxies.forEach((p, i) => {
+                if (!p['_no-resolve'] && p['no-resolve']) {
+                    proxies[i]['_no-resolve'] = p['no-resolve'];
+                }
+            });
             const results = {};
             const limit = 15; // more than 20 concurrency may result in surge TCP connection shortage.
             const totalDomain = [
                 ...new Set(
                     proxies
-                        .filter((p) => !isIP(p.server) && !p['no-resolve'])
+                        .filter((p) => !isIP(p.server) && !p['_no-resolve'])
                         .map((c) => c.server),
                 ),
             ];
@@ -543,7 +548,7 @@ function ResolveDomainOperator({ provider, type: _type, filter, cache }) {
                 await Promise.all(currentBatch);
             }
             proxies.forEach((p) => {
-                if (!p['no-resolve']) {
+                if (!p['_no-resolve']) {
                     if (results[p.server]) {
                         if (_type === 'IP4P') {
                             const { server, port } = parseIP4P(
@@ -578,7 +583,7 @@ function ResolveDomainOperator({ provider, type: _type, filter, cache }) {
 
             return proxies.filter((p) => {
                 if (filter === 'removeFailed') {
-                    return isIP(p.server) || p['no-resolve'] || p.resolved;
+                    return isIP(p.server) || p['_no-resolve'] || p.resolved;
                 } else if (filter === 'IPOnly') {
                     return isIP(p.server);
                 } else if (filter === 'IPv4Only') {
@@ -862,13 +867,6 @@ function shuffle(array) {
 // deep clone object
 function clone(object) {
     return JSON.parse(JSON.stringify(object));
-}
-
-// remove flag
-function removeFlag(str) {
-    return str
-        .replace(/[\uD83C][\uDDE6-\uDDFF][\uD83C][\uDDE6-\uDDFF]|🏴‍☠️|🏳️‍🌈/g, '')
-        .trim();
 }
 
 function createDynamicFunction(name, script, $arguments) {

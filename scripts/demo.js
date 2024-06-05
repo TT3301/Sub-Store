@@ -7,10 +7,12 @@ function operator(proxies = [], targetPlatform, context) {
   // proxies 为传入的内部节点数组
   // 结构大致参考了 Clash.Meta(mihomo) 有私货
   // 可在预览界面点击节点查看 JSON 结构 或查看 `target=JSON` 的通用订阅
-  // 1. `no-resolve` 为不解析域名
-  // 2. 域名解析后 会多一个 `resolved` 字段
+  // 1. `_no-resolve` 为不解析域名
+  // 2. 域名解析后 会多一个 `_resolved` 字段
   // 3. 域名解析后会有`_IPv4`, `_IPv6`, `_IP`(若有多个步骤, 只取第一次成功的 v4 或 v6 数据), `_domain` 字段
   // 4. 节点字段 `exec` 为 `ssr-local` 路径, 默认 `/usr/local/bin/ssr-local`; 端口从 10000 开始递增(暂不支持配置)
+  // 5. `_subName` 为单条订阅名
+  // 6. `_collectionName` 为组合订阅名
 
   // $arguments 为传入的脚本参数
 
@@ -38,12 +40,15 @@ function operator(proxies = [], targetPlatform, context) {
   //     isIP,
   //     yaml, // yaml 解析和生成
   //     getFlag, // 获取 emoji 旗帜
+  //     removeFlag, // 移除 emoji 旗帜
   //     getISO, // 获取 ISO 3166-1 alpha-2 代码
   //     Gist, // Gist 类
   // }
 
   // 示例: 给节点名添加前缀
   // $server.name = `[${ProxyUtils.getISO($server.name)}] ${$server.name}`
+  // 示例: 给节点名添加旗帜
+  // $server.name = `[${ProxyUtils.getFlag($server.name).replace(/🇹🇼/g, '🇼🇸')}] ${ProxyUtils.removeFlag($server.name)}`
 
   // 示例: 从 sni 文件中读取内容并进行节点操作
   // const sni = await produceArtifact({
@@ -96,40 +101,9 @@ function operator(proxies = [], targetPlatform, context) {
   // })
 
   // 4. 一个比较折腾的方案: 在脚本操作中, 把内容同步到另一个 gist
-
-  // async function operator(proxies = []) {
-  //   const $ = $substore
-  //   const GITHUB_TOKEN = 'ghp_xxxxxxxxxxxxxxxxxxxxx'
-  //   const GIST_NAME = 'share'
-  //   const FILENAME = 'mihomo.yaml'
-  //   let files = {}
-  //   let content = await produceArtifact({
-  //     type: 'subscription',
-  //     subscription: {},
-  //     content: 'proxies:\n' + proxies.map((proxy) => '  - ' + JSON.stringify(proxy) + '\n').join(''),
-  //     platform: 'ClashMeta',
-  //   })
-  //   const manager = new ProxyUtils.Gist({
-  //       token: GITHUB_TOKEN,
-  //       key: GIST_NAME,
-  //   });
-  //   files[encodeURIComponent(FILENAME)] = {
-  //       content,
-  //   };
-  //   const res = await manager.upload(files);
-  //   let body = {};
-  //   try {
-  //       body = JSON.parse(res.body);
-  //       // eslint-disable-next-line no-empty
-  //   } catch (e) {}
-  //   const raw_url =
-  //   body.files[encodeURIComponent(FILENAME)]?.raw_url;
-  //   console.log(raw_url)
-  //   const new_url = raw_url?.replace(/\/raw\/[^/]*\/(.*)/, '/raw/$1');
-  //   console.log(new_url)
-  //   $.notify('🌍 Sub-Store', `更新到 Gist: ${new_url}`);
-  //   return proxies
-  // }
+  // 见 https://t.me/zhetengsha/1428
+  // 
+  // const content = ProxyUtils.produce(proxies, platform)
 
   // // YAML
   // ProxyUtils.yaml.load('YAML String')
