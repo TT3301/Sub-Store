@@ -1,3 +1,4 @@
+import rs from '@/utils/rs';
 import YAML from '@/utils/yaml';
 import download from '@/utils/download';
 import {
@@ -338,7 +339,11 @@ function lastParse(proxy) {
             proxy.network = 'tcp';
         }
     }
-    if (['trojan', 'tuic', 'hysteria', 'hysteria2'].includes(proxy.type)) {
+    if (
+        ['trojan', 'tuic', 'hysteria', 'hysteria2', 'juicity'].includes(
+            proxy.type,
+        )
+    ) {
         proxy.tls = true;
     }
     if (proxy.network) {
@@ -458,6 +463,25 @@ function lastParse(proxy) {
     }
     if (['', 'off'].includes(proxy.sni)) {
         proxy['disable-sni'] = true;
+    }
+    let caStr = proxy['ca_str'];
+    if (proxy['ca-str']) {
+        caStr = proxy['ca-str'];
+    } else if (caStr) {
+        delete proxy['ca_str'];
+        proxy['ca-str'] = caStr;
+    }
+    try {
+        if ($.env.isNode && !caStr && proxy['_ca']) {
+            caStr = $.node.fs.readFileSync(proxy['_ca'], {
+                encoding: 'utf8',
+            });
+        }
+    } catch (e) {
+        $.error(`Read ca file failed\nReason: ${e}`);
+    }
+    if (!proxy['tls-fingerprint'] && caStr) {
+        proxy['tls-fingerprint'] = rs.generateFingerprint(caStr);
     }
     return proxy;
 }
