@@ -408,6 +408,20 @@ function lastParse(proxy) {
         delete proxy.ports;
     }
     if (['vless'].includes(proxy.type)) {
+        // 删除 reality-opts: {}
+        if (
+            proxy['reality-opts'] &&
+            Object.keys(proxy['reality-opts']).length === 0
+        ) {
+            delete proxy['reality-opts'];
+        }
+        // 删除 grpc-opts: {}
+        if (
+            proxy['grpc-opts'] &&
+            Object.keys(proxy['grpc-opts']).length === 0
+        ) {
+            delete proxy['grpc-opts'];
+        }
         // 非 reality, 空 flow 没有意义
         if (!proxy['reality-opts'] && !proxy.flow) {
             delete proxy.flow;
