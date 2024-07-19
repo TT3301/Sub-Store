@@ -2,7 +2,13 @@ import { Buffer } from 'buffer';
 import rs from '@/utils/rs';
 import YAML from '@/utils/yaml';
 import download from '@/utils/download';
-import { isIPv4, isIPv6, isValidPortNumber, isNotBlank } from '@/utils';
+import {
+    isIPv4,
+    isIPv6,
+    isValidPortNumber,
+    isNotBlank,
+    ipAddress,
+} from '@/utils';
 import PROXY_PROCESSORS, { ApplyProcessor } from './processors';
 import PROXY_PREPROCESSORS from './preprocessors';
 import PROXY_PRODUCERS from './producers';
@@ -267,6 +273,7 @@ export const ProxyUtils = {
     parse,
     process: processFn,
     produce,
+    ipAddress,
     isIPv4,
     isIPv6,
     isIP,
@@ -406,6 +413,15 @@ function lastParse(proxy) {
     }
     if (['hysteria', 'hysteria2'].includes(proxy.type) && !proxy.ports) {
         delete proxy.ports;
+    }
+    if (
+        ['hysteria2'].includes(proxy.type) &&
+        proxy.obfs &&
+        !['salamander'].includes(proxy.obfs) &&
+        !proxy['obfs-password']
+    ) {
+        proxy['obfs-password'] = proxy.obfs;
+        proxy.obfs = 'salamander';
     }
     if (['vless'].includes(proxy.type)) {
         // 删除 reality-opts: {}

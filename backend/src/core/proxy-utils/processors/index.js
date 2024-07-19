@@ -1,6 +1,6 @@
 import resourceCache from '@/utils/resource-cache';
 import scriptResourceCache from '@/utils/script-resource-cache';
-import { isIPv4, isIPv6 } from '@/utils';
+import { isIPv4, isIPv6, ipAddress } from '@/utils';
 import { FULL } from '@/utils/logical';
 import { getFlag, removeFlag } from '@/utils/geo';
 import { doh } from '@/utils/dns';
@@ -364,9 +364,6 @@ function parseIP4P(IP4P) {
     let server;
     let port;
     try {
-        if (!/^2001::[^:]+:[^:]+:[^:]+$/.test(IP4P)) {
-            throw new Error(`Invalid IP4P: ${IP4P}`);
-        }
         let array = IP4P.split(':');
 
         port = parseInt(array[2], 16);
@@ -622,26 +619,44 @@ function ResolveDomainOperator({
                 if (!p['_no-resolve']) {
                     if (results[p.server]) {
                         p._resolved_ips = results[p.server];
-                        const ip = Array.isArray(results[p.server])
+                        let ip = Array.isArray(results[p.server])
                             ? results[p.server][
                                   Math.floor(
                                       Math.random() * results[p.server].length,
                                   )
                               ]
                             : results[p.server];
-                        if (_type === 'IP4P') {
-                            const { server, port } = parseIP4P(ip);
-                            if (server && port) {
+                        if (type === 'IPv6' && isIPv6(ip)) {
+                            try {
+                                ip = new ipAddress.Address6(ip).correctForm();
+                            } catch (e) {
+                                $.error(
+                                    `Failed to parse IPv6 address: ${ip}: ${e}`,
+                                );
+                            }
+                            if (/^2001::[^:]+:[^:]+:[^:]+$/.test(ip)) {
+                                p._IP4P = ip;
+                                const { server, port } = parseIP4P(ip);
+                                if (server && port) {
+                                    p._domain = p.server;
+                                    p.server = server;
+                                    p.port = port;
+                                    p.resolved = true;
+                                    p._IPv4 = p.server;
+                                    if (!isIP(p._IP)) {
+                                        p._IP = p.server;
+                                    }
+                                } else if (!p.resolved) {
+                                    p.resolved = false;
+                                }
+                            } else {
                                 p._domain = p.server;
-                                p.server = server;
-                                p.port = port;
+                                p.server = ip;
                                 p.resolved = true;
-                                p._IPv4 = p.server;
+                                p[`_${type}`] = p.server;
                                 if (!isIP(p._IP)) {
                                     p._IP = p.server;
                                 }
-                            } else {
-                                p.resolved = false;
                             }
                         } else {
                             p._domain = p.server;
@@ -652,7 +667,7 @@ function ResolveDomainOperator({
                                 p._IP = p.server;
                             }
                         }
-                    } else {
+                    } else if (!p.resolved) {
                         p.resolved = false;
                     }
                 }
