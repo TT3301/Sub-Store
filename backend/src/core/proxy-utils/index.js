@@ -9,6 +9,7 @@ import {
     isNotBlank,
     ipAddress,
     getRandomPort,
+    numberToString,
 } from '@/utils';
 import PROXY_PROCESSORS, { ApplyProcessor } from './processors';
 import PROXY_PREPROCESSORS from './preprocessors';
@@ -209,8 +210,6 @@ function produce(proxies, targetPlatform, type, opts = {}) {
     );
 
     proxies = proxies.map((proxy) => {
-        proxy._subName = proxy.subName;
-        proxy._collectionName = proxy.collectionName;
         proxy._resolved = proxy.resolved;
 
         if (!isNotBlank(proxy.name)) {
@@ -267,7 +266,7 @@ function produce(proxies, targetPlatform, type, opts = {}) {
             proxies.length > 0 &&
             proxies.every((p) => p.type === 'wireguard')
         ) {
-            list = `#!name=${proxies[0]?.subName}
+            list = `#!name=${proxies[0]?._subName}
 #!desc=${proxies[0]?._desc ?? ''}
 #!category=${proxies[0]?._category ?? ''}
 ${list}`;
@@ -327,6 +326,9 @@ function formatTransportPath(path) {
 }
 
 function lastParse(proxy) {
+    if (typeof proxy.password === 'number') {
+        proxy.password = numberToString(proxy.password);
+    }
     if (proxy.interface) {
         proxy['interface-name'] = proxy.interface;
         delete proxy.interface;
