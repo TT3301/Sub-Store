@@ -13,6 +13,9 @@ import { getISO } from '@/utils/geo';
 import env from '@/utils/env';
 
 export default function register($app) {
+    $app.get('/share/col/:name', downloadCollection);
+    $app.get('/share/sub/:name', downloadSubscription);
+
     $app.get('/download/collection/:name', downloadCollection);
     $app.get('/download/:name', downloadSubscription);
     $app.get(
@@ -185,7 +188,7 @@ async function downloadSubscription(req, res) {
                     if (!$arguments.noFlow) {
                         // forward flow headers
                         const flowInfo = await getFlowHeaders(
-                            url,
+                            $arguments?.insecure ? `${url}#insecure` : url,
                             $arguments.flowUserAgent,
                             undefined,
                             proxy || sub.proxy,
@@ -378,7 +381,7 @@ async function downloadCollection(req, res) {
                         }
                         if (!$arguments.noFlow) {
                             const flowInfo = await getFlowHeaders(
-                                url,
+                                $arguments?.insecure ? `${url}#insecure` : url,
                                 $arguments.flowUserAgent,
                                 undefined,
                                 proxy || sub.proxy || collection.proxy,
