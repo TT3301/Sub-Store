@@ -44,14 +44,19 @@ export default async function download(
         }
     }
     const { isNode, isStash, isLoon, isShadowRocket, isQX } = ENV();
-    const { defaultProxy, defaultUserAgent, defaultTimeout, cacheThreshold } =
-        $.read(SETTINGS_KEY);
+    const {
+        defaultProxy,
+        defaultUserAgent,
+        defaultTimeout,
+        cacheThreshold: defaultCacheThreshold,
+    } = $.read(SETTINGS_KEY);
+    const cacheThreshold = defaultCacheThreshold || 1024;
     let proxy = customProxy || defaultProxy;
     if ($.env.isNode) {
         proxy = proxy || eval('process.env.SUB_STORE_BACKEND_DEFAULT_PROXY');
     }
     const userAgent = ua || defaultUserAgent || 'clash.meta';
-    const requestTimeout = timeout || defaultTimeout;
+    const requestTimeout = timeout || defaultTimeout || 8000;
     const id = hex_md5(userAgent + url);
 
     if ($arguments?.cacheKey === true) {
