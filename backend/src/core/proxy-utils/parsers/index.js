@@ -46,7 +46,9 @@ function URI_SS() {
         content = content.split('#')[0]; // strip proxy name
         // handle IPV4 and IPV6
         let serverAndPortArray = content.match(/@([^/]*)(\/|$)/);
-        let userInfoStr = Base64.decode(content.split('@')[0]);
+        let userInfoStr = Base64.decode(
+            decodeURIComponent(content.split('@')[0]),
+        );
         let query = '';
         if (!serverAndPortArray) {
             if (content.includes('?')) {
@@ -77,7 +79,6 @@ function URI_SS() {
         proxy.port = `${serverAndPort.substring(portIdx + 1)}`.match(
             /\d+/,
         )?.[0];
-
         const userInfo = userInfoStr.match(/(^.*?):(.*$)/);
         proxy.cipher = userInfo[1];
         proxy.password = userInfo[2];
@@ -893,6 +894,7 @@ function Clash_All() {
                 'hysteria2',
                 'wireguard',
                 'ssh',
+                'direct',
             ].includes(proxy.type)
         ) {
             throw new Error(
@@ -1191,6 +1193,14 @@ function Loon_WireGuard() {
     return { name, test, parse };
 }
 
+function Surge_Direct() {
+    const name = 'Surge Direct Parser';
+    const test = (line) => {
+        return /^.*=\s*direct/.test(line.split(',')[0]);
+    };
+    const parse = (line) => getSurgeParser().parse(line);
+    return { name, test, parse };
+}
 function Surge_SSH() {
     const name = 'Surge SSH Parser';
     const test = (line) => {
@@ -1380,6 +1390,7 @@ export default [
     URI_Hysteria2(),
     URI_Trojan(),
     Clash_All(),
+    Surge_Direct(),
     Surge_SSH(),
     Surge_SS(),
     Surge_VMess(),
