@@ -213,9 +213,29 @@ async function downloadSubscription(req, res) {
                 }
             }
             if (sub.subUserinfo) {
+                let subUserInfo;
+                if (/^https?:\/\//.test(sub.subUserinfo)) {
+                    try {
+                        subUserInfo = await getFlowHeaders(
+                            undefined,
+                            undefined,
+                            undefined,
+                            proxy || sub.proxy,
+                            sub.subUserinfo,
+                        );
+                    } catch (e) {
+                        $.error(
+                            `订阅 ${name} 使用自定义流量链接 ${
+                                sub.subUserinfo
+                            } 获取流量信息时发生错误: ${JSON.stringify(e)}`,
+                        );
+                    }
+                } else {
+                    subUserInfo = sub.subUserinfo;
+                }
                 res.set(
                     'subscription-userinfo',
-                    [sub.subUserinfo, flowInfo].filter((i) => i).join('; '),
+                    [subUserInfo, flowInfo].filter((i) => i).join('; '),
                 );
             }
 
@@ -255,7 +275,7 @@ async function downloadSubscription(req, res) {
             );
         }
     } else {
-        $.error(`🌍 Sub-Store 下载订阅失败`, `❌ 未找到订阅：${name}！`);
+        $.error(`🌍 Sub-Store 下载订阅失败\n❌ 未找到订阅：${name}！`);
         failed(
             res,
             new ResourceNotFoundError(
@@ -355,13 +375,12 @@ async function downloadCollection(req, res) {
                 proxy,
                 noCache,
             });
-
+            let subUserInfoOfSub;
             // forward flow header from the first subscription in this collection
             const allSubs = $.read(SUBS_KEY);
             const subnames = collection.subscriptions;
             if (subnames.length > 0) {
                 const sub = findByName(allSubs, subnames[0]);
-                let flowInfo;
                 if (
                     sub.source !== 'local' ||
                     ['localFirst', 'remoteFirst'].includes(sub.mergeSources)
@@ -395,16 +414,13 @@ async function downloadCollection(req, res) {
                             }
                         }
                         if (!$arguments.noFlow) {
-                            flowInfo = await getFlowHeaders(
+                            subUserInfoOfSub = await getFlowHeaders(
                                 $arguments?.insecure ? `${url}#insecure` : url,
                                 $arguments.flowUserAgent,
                                 undefined,
                                 proxy || sub.proxy || collection.proxy,
                                 $arguments.flowUrl,
                             );
-                            if (flowInfo) {
-                                res.set('subscription-userinfo', flowInfo);
-                            }
                         }
                     } catch (err) {
                         $.error(
@@ -415,12 +431,60 @@ async function downloadCollection(req, res) {
                     }
                 }
                 if (sub.subUserinfo) {
-                    res.set(
-                        'subscription-userinfo',
-                        [sub.subUserinfo, flowInfo].filter((i) => i).join('; '),
-                    );
+                    let subUserInfo;
+                    if (/^https?:\/\//.test(sub.subUserinfo)) {
+                        try {
+                            subUserInfo = await getFlowHeaders(
+                                undefined,
+                                undefined,
+                                undefined,
+                                proxy || sub.proxy,
+                                sub.subUserinfo,
+                            );
+                        } catch (e) {
+                            $.error(
+                                `组合订阅 ${name} 使用自定义流量链接 ${
+                                    sub.subUserinfo
+                                } 获取流量信息时发生错误: ${JSON.stringify(e)}`,
+                            );
+                        }
+                    } else {
+                        subUserInfo = sub.subUserinfo;
+                    }
+                    subUserInfoOfSub = [subUserInfo, subUserInfoOfSub]
+                        .filter((i) => i)
+                        .join('; ');
                 }
             }
+
+            $.info(`组合订阅 ${name} 透传的的流量信息: ${subUserInfoOfSub}`);
+
+            let subUserInfoOfCol;
+            if (/^https?:\/\//.test(collection.subUserinfo)) {
+                try {
+                    subUserInfoOfCol = await getFlowHeaders(
+                        undefined,
+                        undefined,
+                        undefined,
+                        proxy || collection.proxy,
+                        collection.subUserinfo,
+                    );
+                } catch (e) {
+                    $.error(
+                        `组合订阅 ${name} 使用自定义流量链接 ${
+                            collection.subUserinfo
+                        } 获取流量信息时发生错误: ${JSON.stringify(e)}`,
+                    );
+                }
+            } else {
+                subUserInfoOfCol = collection.subUserinfo;
+            }
+            res.set(
+                'subscription-userinfo',
+                [subUserInfoOfCol, subUserInfoOfSub]
+                    .filter((i) => i)
+                    .join('; '),
+            );
 
             if (platform === 'JSON') {
                 if (resultFormat === 'nezha') {

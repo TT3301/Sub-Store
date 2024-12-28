@@ -17,6 +17,7 @@ const ISOFlags = {
     '🇧🇪': ['BE', 'BEL'],
     '🇧🇬': ['BG', 'BGR'],
     '🇧🇭': ['BH', 'BHR'],
+    '🇧🇴': ['BO', 'BOL'],
     '🇧🇷': ['BR', 'BRA'],
     '🇧🇾': ['BY', 'BLR'],
     '🇨🇦': ['CA', 'CAN'],
@@ -38,6 +39,7 @@ const ISOFlags = {
     '🇬🇧': ['GB', 'GBR', 'UK'],
     '🇬🇪': ['GE', 'GEO'],
     '🇬🇷': ['GR', 'GRC'],
+    '🇬🇹': ['GT', 'GTM'],
     '🇭🇰': ['HK', 'HKG', 'HKT', 'HKBN', 'HGC', 'WTT', 'CMI'],
     '🇭🇷': ['HR', 'HRV'],
     '🇭🇺': ['HU', 'HUN'],
@@ -141,6 +143,7 @@ export function getFlag(name) {
         '🇧🇭': ['Bahrain', '巴林'],
         '🇧🇷': ['Brazil', '巴西', '圣保罗'],
         '🇧🇾': ['Belarus', '白俄罗斯', '白俄'],
+        '🇧🇴': ['Bolivia', '玻利维亚'],
         '🇨🇦': [
             'Canada',
             '加拿大',
@@ -191,6 +194,7 @@ export function getFlag(name) {
         ],
         '🇬🇪': ['Georgia', '格鲁吉亚', '格魯吉亞'],
         '🇬🇷': ['Greece', '希腊', '希臘'],
+        '🇬🇹': ['Guatemala', '危地马拉'],
         '🇭🇰': [
             'Hongkong',
             '香港',

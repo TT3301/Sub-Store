@@ -3,7 +3,7 @@ import $ from '@/core/app';
 import { isIPv4, isIPv6 } from '@/utils';
 
 const detourParser = (proxy, parsedProxy) => {
-    if (proxy['dialer-proxy']) parsedProxy.detour = proxy['dialer-proxy'];
+    parsedProxy.detour = proxy['dialer-proxy'] || proxy.detour;
 };
 const tfoParser = (proxy, parsedProxy) => {
     parsedProxy.tcp_fast_open = false;
@@ -214,7 +214,11 @@ const tlsParser = (proxy, parsedProxy) => {
                 proxy['reality-opts']['short-id'];
         parsedProxy.tls.utls = { enabled: true };
     }
-    if (proxy['client-fingerprint'] && proxy['client-fingerprint'] !== '')
+    if (
+        !['hysteria', 'hysteria2', 'tuic'].includes(proxy.type) &&
+        proxy['client-fingerprint'] &&
+        proxy['client-fingerprint'] !== ''
+    )
         parsedProxy.tls.utls = {
             enabled: true,
             fingerprint: proxy['client-fingerprint'],

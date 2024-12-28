@@ -62,6 +62,7 @@ async function getFile(req, res) {
         mergeSources,
         ignoreFailedRemoteFile,
         proxy,
+        noCache,
     } = req.query;
     let $options = {};
     if (req.query.$options) {
@@ -113,6 +114,9 @@ async function getFile(req, res) {
         ignoreFailedRemoteFile = decodeURIComponent(ignoreFailedRemoteFile);
         $.info(`指定忽略失败的远程文件: ${ignoreFailedRemoteFile}`);
     }
+    if (noCache) {
+        $.info(`指定不使用缓存: ${noCache}`);
+    }
 
     const allFiles = $.read(FILES_KEY);
     const file = findByName(allFiles, name);
@@ -128,6 +132,7 @@ async function getFile(req, res) {
                 ignoreFailedRemoteFile,
                 $options,
                 proxy,
+                noCache,
             });
 
             try {
@@ -179,7 +184,7 @@ async function getFile(req, res) {
             );
         }
     } else {
-        $.error(`🌍 Sub-Store 下载文件失败`, `❌ 未找到文件：${name}！`);
+        $.error(`🌍 Sub-Store 下载文件失败\n❌ 未找到文件：${name}！`);
         failed(
             res,
             new ResourceNotFoundError(
