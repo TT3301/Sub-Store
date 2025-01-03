@@ -13,11 +13,44 @@ import { getISO } from '@/utils/geo';
 import env from '@/utils/env';
 
 export default function register($app) {
+    $app.get('/share/col/:name/:target', async (req, res) => {
+        const { target } = req.params;
+        if (target) {
+            req.query.target = target;
+            $.info(`使用路由指定目标: ${target}`);
+        }
+        await downloadCollection(req, res);
+    });
     $app.get('/share/col/:name', downloadCollection);
+    $app.get('/share/sub/:name/:target', async (req, res) => {
+        const { target } = req.params;
+        if (target) {
+            req.query.target = target;
+            $.info(`使用路由指定目标: ${target}`);
+        }
+        await downloadSubscription(req, res);
+    });
     $app.get('/share/sub/:name', downloadSubscription);
 
+    $app.get('/download/collection/:name/:target', async (req, res) => {
+        const { target } = req.params;
+        if (target) {
+            req.query.target = target;
+            $.info(`使用路由指定目标: ${target}`);
+        }
+        await downloadCollection(req, res);
+    });
     $app.get('/download/collection/:name', downloadCollection);
+    $app.get('/download/:name/:target', async (req, res) => {
+        const { target } = req.params;
+        if (target) {
+            req.query.target = target;
+            $.info(`使用路由指定目标: ${target}`);
+        }
+        await downloadSubscription(req, res);
+    });
     $app.get('/download/:name', downloadSubscription);
+
     $app.get(
         '/download/collection/:name/api/v1/server/details',
         async (req, res) => {
@@ -59,11 +92,9 @@ async function downloadSubscription(req, res) {
 
     const platform =
         req.query.target || getPlatformFromHeaders(req.headers) || 'JSON';
-
+    const reqUA = req.headers['user-agent'] || req.headers['User-Agent'];
     $.info(
-        `正在下载订阅：${name}\n请求 User-Agent: ${
-            req.headers['user-agent'] || req.headers['User-Agent']
-        }`,
+        `正在下载订阅：${name}\n请求 User-Agent: ${reqUA}\n请求 target: ${req.query.target}\n实际输出: ${platform}`,
     );
     let {
         url,
@@ -98,6 +129,14 @@ async function downloadSubscription(req, res) {
     if (url) {
         url = decodeURIComponent(url);
         $.info(`指定远程订阅 URL: ${url}`);
+        if (!/^https?:\/\//.test(url)) {
+            content = url;
+            $.info(`URL 不是链接，视为本地订阅`);
+        }
+    }
+    if (content) {
+        content = decodeURIComponent(content);
+        $.info(`指定本地订阅: ${content}`);
     }
     if (proxy) {
         proxy = decodeURIComponent(proxy);
@@ -107,10 +146,7 @@ async function downloadSubscription(req, res) {
         ua = decodeURIComponent(ua);
         $.info(`指定远程订阅 User-Agent: ${ua}`);
     }
-    if (content) {
-        content = decodeURIComponent(content);
-        $.info(`指定本地订阅: ${content}`);
-    }
+
     if (mergeSources) {
         mergeSources = decodeURIComponent(mergeSources);
         $.info(`指定合并来源: ${mergeSources}`);
@@ -140,6 +176,13 @@ async function downloadSubscription(req, res) {
     const sub = findByName(allSubs, name);
     if (sub) {
         try {
+            const passThroughUA = sub.passThroughUA;
+            if (passThroughUA) {
+                $.info(
+                    `订阅开启了透传 User-Agent, 使用请求的 User-Agent: ${reqUA}`,
+                );
+                ua = reqUA;
+            }
             let output = await produceArtifact({
                 type: 'subscription',
                 name,
@@ -303,7 +346,7 @@ async function downloadCollection(req, res) {
     $.info(
         `正在下载组合订阅：${name}\n请求 User-Agent: ${
             req.headers['user-agent'] || req.headers['User-Agent']
-        }`,
+        }\n请求 target: ${req.query.target}\n实际输出: ${platform}`,
     );
 
     let {
