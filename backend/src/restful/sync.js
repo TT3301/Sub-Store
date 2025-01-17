@@ -216,6 +216,14 @@ async function produceArtifact({
         await Promise.all(
             subnames.map(async (name) => {
                 const sub = findByName(allSubs, name);
+                const passThroughUA = sub.passThroughUA;
+                let reqUA = sub.ua;
+                if (passThroughUA) {
+                    $.info(
+                        `订阅开启了透传 User-Agent, 使用请求的 User-Agent: ${ua}`,
+                    );
+                    reqUA = ua;
+                }
                 try {
                     $.info(`正在处理子订阅：${sub.name}...`);
                     let raw;
@@ -237,7 +245,7 @@ async function produceArtifact({
                                     try {
                                         return await download(
                                             url,
-                                            sub.ua,
+                                            reqUA,
                                             undefined,
                                             proxy ||
                                                 sub.proxy ||
